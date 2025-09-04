@@ -146,3 +146,6 @@ xxhash==3.5.0
 yarl==1.20.1
 zstandard==0.24.0
 PyPDF2
+fastapi
+uvicorn
+duckdb
