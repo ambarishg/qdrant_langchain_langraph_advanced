@@ -19,9 +19,11 @@ class DuckDBDatabaseHelper(DatabaseHelper):
 
     def fetch_all(self, query, params=None):
         """Fetch all results from a SELECT query."""
-        results = self.connection.execute(query, params or ()).fetchall()
+        cursor = self.connection.execute(query, params or ())
+        column_names = [desc[0] for desc in cursor.description]
+        results = cursor.fetchall()
         print(f"Fetched {len(results)} rows.")
-        return results
+        return results , column_names
 
     def fetch_one(self, query, params=None):
         """Fetch a single result from a SELECT query."""

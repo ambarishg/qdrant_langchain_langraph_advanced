@@ -22,16 +22,9 @@ from langchain_qdrant import QdrantVectorStore
 from dotenv import load_dotenv
 from typing import Literal
 
-# Load environment variables for secrets
-load_dotenv(".env")
-QDRANT_URL = os.getenv("QDRANT_URL")
-QDRANT_API_KEY = os.getenv("QDRANT_KEY")
-COLLECTION_NAME = "PWD_SENTENCE_TRANSFORMERS"
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_OPENAI_DEPLOYMENT_ID = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-OPENAI_API_VERSION = os.getenv("OPENAI_API_VERSION")
+from agents.configs import *
+from agents.generate_sql import get_sql_query
+from agents.eam import get_eam_results
 
 def initialize_llm():
     """
@@ -158,7 +151,7 @@ def grade_answer(state: GraphState) -> str:
     return grade.binary_score
 
 
-def get_measurements(state: GraphState) -> dict:
+def get_database_results(state: GraphState) -> dict:
     """Extract and return measurements from the state."""
 
     print("---GET MEASUREMENTS---")
@@ -169,12 +162,13 @@ def get_measurements(state: GraphState) -> dict:
         from db.duckdb.duckdbhelper import DuckDBDatabaseHelper
         duckdb_helper = DuckDBDatabaseHelper('data/test_duckdb.db')
         duckdb_helper.connect()
-        results = duckdb_helper.fetch_all(sql_query)
+        results, column_names = duckdb_helper.fetch_all(sql_query)
         duckdb_helper.close_connection()
 
         if results is not None and len(results) > 0:
             import pandas as pd
             df = pd.DataFrame(results)
+            df.columns = column_names
             dict_df = df.to_dict(orient='records')
             return {"question": question, "generation": dict_df, "documents": str(sql_query)}
         else:
@@ -183,35 +177,11 @@ def get_measurements(state: GraphState) -> dict:
         print(f"Error in get_measurements: {e}")
         return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
 
-def get_sql_query(state):
-    question = state["question"]
-
-    from azureopenaimanager.azureopenai_helper import AzureOpenAIManager
-
-    azure_open_ai_manager = AzureOpenAIManager(
-                        endpoint=AZURE_OPENAI_ENDPOINT,
-                        api_key=AZURE_OPENAI_API_KEY,
-                        deployment_id=AZURE_OPENAI_DEPLOYMENT_ID,
-                        api_version=OPENAI_API_VERSION
-                    )
-    
-    sql_query = None
-    dict_df = None
-
-    msg,_,_,_ = azure_open_ai_manager.generate_answer_document(question)
-    if "```sql" not in msg:
-        sql_query = None
-    else:
-        query = msg.split("```sql")[1].split("```")[0].strip().replace("\n", " ")
-        sql_query = query
-    
-    print(f"SQL Query: {sql_query}")
-    return question,sql_query
 
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
 
-    datasource: Literal["voltage", "web_search", "measurements"] = Field(
+    datasource: Literal["voltage", "web_search", "measurements","EAM"] = Field(
         ...,
         description="""
         
@@ -225,14 +195,32 @@ structured_llm_router = llm.with_structured_output(RouteQuery)
 # Prompt
 # Prompt
 system = """
-You are an expert at routing a user question to a 
-Voltage and Roadways store or web search or measurements.
-measurements has information about current and historical measurements.
-measurements has information about workorders, assets, locations, inspections
-Voltage and Roadways store has information about 
-medium voltage and road ways. This has also information about equations and formulas on electrical engineering.
-Web search has information about current events and news.
-You must choose the most relevant datasource to answer the question.
+You are an expert router that decides the most relevant datasource to answer a user’s question. 
+The possible datasources are:
+
+1. EAM 
+   - Contains: work orders, assets, locations, hazards, hazard locations, and control measures.
+
+2. measurements 
+   - Contains: current and historical measurement data (numerical, time-series, sensor readings, etc.).
+
+3. voltage
+   - Contains: information related to medium voltage, roadways, and electrical engineering (including equations, formulas, and technical concepts).
+
+4. web search
+   - Contains: information about current events, news, and general knowledge outside of the above systems.
+
+Your task:
+For every user question, determine which single datasource is most appropriate to answer it.  
+Select only the datasource that contains the most relevant information needed.  
+Do not use multiple sources—choose the best one.
+
+If the query is about:  
+- Assets, work orders, locations, hazards → EAM 
+- Measurements or historical data → measurements  
+- Medium voltage, roadways, or electrical concepts/formulas → voltage  
+- Current events, news, or general knowledge → web_search
+
 """
 route_prompt = ChatPromptTemplate.from_messages(
     [
@@ -266,6 +254,9 @@ def route_question(state):
     elif source.datasource == "measurements":
         print("---ROUTE QUESTION TO MEASUREMENTS---")
         return "measurements"
+    elif source.datasource == "EAM":
+        print("---ROUTE QUESTION TO EAM---")
+        return "eam"
 
 
 from langgraph.graph import END, StateGraph, START
@@ -275,12 +266,14 @@ workflow = StateGraph(GraphState)
 # Define the nodes
 workflow.add_node("web_search", web_and_generate)  # web search
 workflow.add_node("voltage", retrieve_and_generate)  # retrieve
-workflow.add_node("measurements", get_measurements)  # measurements
+workflow.add_node("measurements", get_database_results)  # measurements
+workflow.add_node("eam", get_eam_results)  # eam
 
 workflow.add_conditional_edges(START, route_question,
                                {"web_search": "web_search",
                                 "voltage": "voltage",
-                                "measurements": "measurements"
+                                "measurements": "measurements",
+                                "eam": "eam"
                                 })
 
 
@@ -292,6 +285,7 @@ workflow.add_conditional_edges("voltage",
                                  })
 workflow.add_edge("web_search", END)
 workflow.add_edge("measurements", END)
+workflow.add_edge("eam", END)
 
 # Compile the state graph application
 app = workflow.compile()

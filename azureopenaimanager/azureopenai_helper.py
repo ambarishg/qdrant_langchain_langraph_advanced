@@ -56,6 +56,12 @@ class AzureOpenAIManager(ILLMHelper):
                 ]
         return self.generate_answer(messages)
     
+    def generate_answer_document_with_context(self,query,context):
+        messages=[{"role": "assistant", "content": context},
+                {"role": "user", "content": query}
+                ]
+        return self.generate_answer(messages)
+    
     def create_prompt(self,context,query):
         header = "If the answer is not found within the context, please mention \
         that the answer is not found \
