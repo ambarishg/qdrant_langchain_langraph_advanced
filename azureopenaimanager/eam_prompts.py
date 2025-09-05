@@ -18,6 +18,12 @@ eam_prompts = """
     location_hazard table has a foreign key relationship with the hazards table 
     through the hazard_id field
 
+    work orders table specifics -
+    Make the status filter in the work_orders table in CamelCase.
+    The valid values for status are: New, In Progress, Completed, On Hold, Cancelled, Approved
+    Make the owner_name filter a LIKE filter.
+    Make the description filter case insensitive.
+
     Schema:
 
     CREATE TABLE IF NOT EXISTS assets (

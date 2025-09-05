@@ -3,10 +3,7 @@ question = """
     Please provide the query as required by SQL Server.
     Provide only the SQL query.
     Make the MeasurementType filter value in CAPS.
-    Make the status filter in the work_orders table in CamelCase.
-    The valid values for status are: New, In Progress, Completed, On Hold, Cancelled, Approved
-    Make the owner_name filter a LIKE filter.
-    Make the description filter case insensitive.
+    
    
     CREATE TABLE IF NOT EXISTS measurements (
     Organization VARCHAR,
