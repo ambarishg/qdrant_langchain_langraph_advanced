@@ -164,26 +164,7 @@ def get_measurements(state: GraphState) -> dict:
     print("---GET MEASUREMENTS---")
     try:
 
-        question = state["question"]
-
-        from azureopenaimanager.azureopenai_helper import AzureOpenAIManager
-
-        azure_open_ai_manager = AzureOpenAIManager(
-                        endpoint=AZURE_OPENAI_ENDPOINT,
-                        api_key=AZURE_OPENAI_API_KEY,
-                        deployment_id=AZURE_OPENAI_DEPLOYMENT_ID,
-                        api_version=OPENAI_API_VERSION
-                    )
-    
-        sql_query = None
-        dict_df = None
-
-        msg,_,_,_ = azure_open_ai_manager.generate_answer_document(question)
-        if "```sql" not in msg:
-            sql_query = None
-        else:
-            query = msg.split("```sql")[1].split("```")[0].strip().replace("\n", " ")
-            sql_query = query
+        question, sql_query = get_sql_query(state)
         
         from db.duckdb.duckdbhelper import DuckDBDatabaseHelper
         duckdb_helper = DuckDBDatabaseHelper('data/test_duckdb.db')
@@ -197,10 +178,35 @@ def get_measurements(state: GraphState) -> dict:
             dict_df = df.to_dict(orient='records')
             return {"question": question, "generation": dict_df, "documents": str(sql_query)}
         else:
-            return {"question": question, "generation": "", "documents": str(sql_query)}
+            return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
     except Exception as e:
         print(f"Error in get_measurements: {e}")
-        return {"question": question, "generation": "", "documents": str(sql_query)}
+        return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
+
+def get_sql_query(state):
+    question = state["question"]
+
+    from azureopenaimanager.azureopenai_helper import AzureOpenAIManager
+
+    azure_open_ai_manager = AzureOpenAIManager(
+                        endpoint=AZURE_OPENAI_ENDPOINT,
+                        api_key=AZURE_OPENAI_API_KEY,
+                        deployment_id=AZURE_OPENAI_DEPLOYMENT_ID,
+                        api_version=OPENAI_API_VERSION
+                    )
+    
+    sql_query = None
+    dict_df = None
+
+    msg,_,_,_ = azure_open_ai_manager.generate_answer_document(question)
+    if "```sql" not in msg:
+        sql_query = None
+    else:
+        query = msg.split("```sql")[1].split("```")[0].strip().replace("\n", " ")
+        sql_query = query
+    
+    print(f"SQL Query: {sql_query}")
+    return question,sql_query
 
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
@@ -222,6 +228,7 @@ system = """
 You are an expert at routing a user question to a 
 Voltage and Roadways store or web search or measurements.
 measurements has information about current and historical measurements.
+measurements has information about workorders, assets, locations, inspections
 Voltage and Roadways store has information about 
 medium voltage and road ways. This has also information about equations and formulas on electrical engineering.
 Web search has information about current events and news.
