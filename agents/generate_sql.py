@@ -1,4 +1,3 @@
-
 from agents.configs import *
 
 def get_sql_query(state, context=""):

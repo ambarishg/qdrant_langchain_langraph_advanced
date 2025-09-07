@@ -1,12 +1,8 @@
 from agents.generate_sql import *
-from typing import List, TypedDict
+
 from azureopenaimanager.eam_prompts import eam_prompts
 
-# Define TypedDict for graph state
-class GraphState(TypedDict):
-    question: str
-    generation: str
-    documents: List[str]
+from agents.graph_state import GraphState
 
 def get_eam_results(state: GraphState) -> dict:
     """Extract and return measurements from the state."""
@@ -27,9 +23,9 @@ def get_eam_results(state: GraphState) -> dict:
             df = pd.DataFrame(results)
             df.columns = column_names
             dict_df = df.to_dict(orient='records')
-            return {"question": question, "generation": dict_df, "documents": str(sql_query)}
+            return {"question": question, "generation": dict_df, "documents": str(sql_query), "datasource": "EAM"}
         else:
             return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
     except Exception as e:
         print(f"Error in get_eam_results: {e}")
-        return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
+        return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query), "datasource": "EAM"}

@@ -23,8 +23,8 @@ fastapi_app.add_middleware(
 async def run_graph(input_data: InputData):
     
     try:
-        result = run_app(input_data.question)
-        return {"result": result}
+        result , datasource = run_app(input_data.question)
+        return {"result": result , "datasource": datasource}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
