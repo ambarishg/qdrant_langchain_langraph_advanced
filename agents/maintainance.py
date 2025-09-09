@@ -34,6 +34,12 @@ workflow.add_conditional_edges("eam",
                                  "no": "web_search"
                                  })
 
+workflow.add_conditional_edges("measurements",
+                                grade_answer, 
+                                {"yes": END, 
+                                 "no": "web_search"
+                                 })
+
 workflow.add_conditional_edges("voltage",
                                 grade_answer, 
                                 {"yes": END, 
@@ -42,6 +48,8 @@ workflow.add_conditional_edges("voltage",
 workflow.add_edge("web_search", END)
 workflow.add_edge("measurements", END)
 workflow.add_edge("eam", END)
+
+
 
 # Compile the state graph application
 app = workflow.compile()
@@ -53,7 +61,9 @@ def run_app(question: str) -> str:
     Returns the generated answer or None if unavailable.
     """
     inputs = {"question": question}
-    result = app.invoke(inputs)
+
+    config = {"configurable": {"thread_id": "1"}}
+    result = app.invoke(inputs,config = config)
 
     if "generation" in result:
         pprint(result["generation"])
