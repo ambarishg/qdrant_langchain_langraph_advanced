@@ -1,61 +1,16 @@
 import os
 from pprint import pprint
-from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 
 
-from langchain_core.prompts import ChatPromptTemplate
-
-from agents.configs import *
 from agents.eam import get_eam_results
 from agents.llm import *
 from agents.graph_state import GraphState
 from agents.question_router import *
-from agents.rag_chain import rag_chain
 from agents.retrieve import retrieve_and_generate
 from agents.measurements import get_database_results
-
 from agents.web_generate import web_and_generate
-
-# Define answer grading model and prompt
-class GradeAnswer(BaseModel):
-    """Binary score assessing if the answer addresses the question."""
-    binary_score: str = Field(description="Answer addresses the question: 'yes' or 'no'")
-
-
-grading_system_prompt = (
-    "You are a grader assessing whether an answer resolves a question.\n"
-    "Give a binary score 'yes' or 'no'.\n"
-    "'No' means the answer does not resolve the question.\n"
-    "'Yes' means the answer resolves the question."
-)
-
-answer_prompt = ChatPromptTemplate.from_messages([
-    ("system", grading_system_prompt),
-    ("human", "User question:\n\n{question}\n\nLLM generation:\n{generation}"),
-])
-
-structured_llm_grader = llm.with_structured_output(GradeAnswer)
-answer_grader = answer_prompt | structured_llm_grader
-
-
-
-
-def grade_answer(state: GraphState) -> str:
-    """Evaluate the quality of the generated answer."""
-    print("---GRADE ANSWER---")
-    question = state["question"]
-    generation = state["generation"]
-
-    grade = answer_grader.invoke({"question": question, "generation": generation})
-    print(f"Grade: {grade.binary_score}")
-
-    return grade.binary_score
-
-
-
-
-from langgraph.graph import END, StateGraph, START
+from agents.grade_answer import grade_answer
 
 workflow = StateGraph(GraphState)
 
@@ -106,4 +61,4 @@ def run_app(question: str) -> str:
         return result["generation"] , result["datasource"]
     else:
         print("No generation found in result")
-        return None
+        return "No result found" , "No data source"
