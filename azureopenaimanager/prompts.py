@@ -13,10 +13,7 @@ question = """
     MeasurementType VARCHAR,
     Value DOUBLE,
     Date DATETIME
-);
-    
-
-   
+);   
 """
 
 max_tokens = 1000

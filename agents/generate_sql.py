@@ -1,7 +1,9 @@
 from agents.configs import *
+from agents.generate_reply import *
 
 def get_sql_query(state, context=""):
     question = state["question"]
+    conversation_id = state["token"]
 
     from azureopenaimanager.azureopenai_helper import AzureOpenAIManager
 
@@ -16,9 +18,9 @@ def get_sql_query(state, context=""):
     dict_df = None
     print(f"Context: {context}")
     if context == "":
-        msg,_,_,_ = azure_open_ai_manager.generate_answer_document(question)
+        msg = get_reply(question,"",conversation_id,False)
     else:
-        msg,_,_,_ = azure_open_ai_manager.generate_answer_document_with_context(question,context)
+        msg= get_reply(question,context,conversation_id,False)
 
     if "```sql" not in msg:
         sql_query = None
