@@ -1,6 +1,6 @@
 question = """
     Given the following SQL tables, please write the SQL query based on the schema provided and the question.
-    Please provide the query as required by SQL Server.
+    Please provide the query as required by DuckDB.
     Provide only the SQL query.
     Make the MeasurementType filter value in CAPS.
     

@@ -85,22 +85,8 @@ def get_measurements_workflow():
 
     # Define the nodes
     workflow.add_node("measurements", get_database_results)
-    workflow.add_node("web_search", web_and_generate)  # web searchements
-
     workflow.add_edge(START,"measurements")
-
-    workflow.add_conditional_edges("measurements",
-                                    grade_answer, 
-                                    {"yes": END, 
-                                    "no": "web_search"
-                                    })
-
-    
-
-    workflow.add_edge("web_search", END)
-
-
-
+    workflow.add_edge("measurements", END)
     # Compile the state graph application
     app = workflow.compile()
 
