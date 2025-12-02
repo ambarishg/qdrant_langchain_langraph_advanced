@@ -149,3 +149,4 @@ PyPDF2
 fastapi
 uvicorn
 duckdb
+azure-cosmos

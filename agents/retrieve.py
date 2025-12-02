@@ -1,6 +1,7 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from langchain_qdrant import QdrantVectorStore
+from agents.generate_reply import *
 
 
 from agents.configs import *
@@ -8,7 +9,6 @@ from agents.llm import *
 from agents.graph_state import GraphState
 from typing import List
 from typing_extensions import TypedDict
-from agents.rag_chain import rag_chain
 
 
 # Initialize embeddings and vector store retriever
@@ -40,11 +40,12 @@ def retrieve_and_generate(state: GraphState) -> GraphState:
     """Retrieve documents from Voltage vector store and generate an answer."""
     print("---RETRIEVE AND GENERATE---")
     question = state["question"]
+    conversation_id = state["token"]
 
     docs = retriever.invoke(question)
     documents_text = "\n".join([d.page_content for d in docs])
 
-    generation = rag_chain.invoke({"context": documents_text, "question": question})
+    generation = get_reply(question,documents_text,conversation_id)
 
     return {"question": question, "documents": documents_text, "generation": generation ,"datasource": "voltage"}
 

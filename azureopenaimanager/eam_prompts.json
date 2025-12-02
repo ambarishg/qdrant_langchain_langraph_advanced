@@ -1,0 +1,8 @@
+{
+ "assets": "CREATE TABLE IF NOT EXISTS assets ( asset_id TEXT PRIMARY KEY, asset_name TEXT NOT NULL, asset_type TEXT, manufacturer TEXT, model_number TEXT, installation_date DATE, last_maintenance_date DATE, location_name TEXT, status TEXT, description TEXT);",
+ "control_measures": "CREATE TABLE IF NOT EXISTS control_measures ( control_measure_id VARCHAR PRIMARY KEY, location_hazard_id VARCHAR, measure_description VARCHAR, implementation_date DATE, status VARCHAR, responsible_person VARCHAR, review_frequency VARCHAR, last_review_date DATE, effectiveness_rating VARCHAR);",
+ "hazards": "CREATE TABLE IF NOT EXISTS hazards ( hazard_id TEXT PRIMARY KEY, hazard_name TEXT NOT NULL, hazard_category TEXT, description TEXT, severity_level TEXT, location_name TEXT);",
+ "location_hazard": "CREATE TABLE IF NOT EXISTS location_hazard ( location_hazard_id VARCHAR PRIMARY KEY, location_name VARCHAR, hazard_id VARCHAR, status VARCHAR, identified_date DATE, last_review_date DATE, risk_level VARCHAR, reviewed_by VARCHAR);",
+ "locations": "CREATE TABLE IF NOT EXISTS locations ( location_name VARCHAR, description VARCHAR, latitude DOUBLE, longitude DOUBLE, address VARCHAR);",
+ "work_orders": "CREATE TABLE IF NOT EXISTS work_orders ( work_order_id VARCHAR(500) PRIMARY KEY, description TEXT, location_name TEXT, asset_id VARCHAR(500), status TEXT, scheduled_start_timestamp TIMESTAMP, scheduled_finish_timestamp TIMESTAMP, owner_name TEXT, priority INTEGER);"
+}

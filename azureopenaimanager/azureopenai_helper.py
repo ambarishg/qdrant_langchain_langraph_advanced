@@ -19,8 +19,7 @@ class AzureOpenAIManager(ILLMHelper):
                  api_key,
                  deployment_id,
                  api_version,
-                 cosmosdb_helper = None,
-                 token = None):
+                 cosmosdb_helper = None):
         
         self.client = AzureOpenAI(
             azure_endpoint = endpoint,
@@ -30,7 +29,6 @@ class AzureOpenAIManager(ILLMHelper):
 
         self.deployment_id = deployment_id
         self.cosmosdb_helper = cosmosdb_helper
-        self.token = token
 
 
     def generate_answer(self,conversation):
@@ -71,8 +69,7 @@ class AzureOpenAIManager(ILLMHelper):
      
     
     def generate_reply_from_context(self,user_input, content, conversation,
-                                    conversation_id = None):
-        # prompt = self.create_prompt(content,user_input)
+                                    conversation_id = None,save_response = True):
 
         conversation.append( {"role": "system", "content": SYSTEM_PROMPT})
 
@@ -115,9 +112,9 @@ class AzureOpenAIManager(ILLMHelper):
         conversation.append({"role": "system", "content": content})
         conversation.append({"role": "user", "content": user_input})
         
+        conversations = conversation[-6:]
 
-
-        reply = self.generate_answer(conversation)
+        reply = self.generate_answer(conversations)
 
         
         # SAVE THE CONVERSATION INTO COSMOSDB
@@ -125,7 +122,7 @@ class AzureOpenAIManager(ILLMHelper):
         # insert the user input and the reply into the CosmosDB
         # with the conversation_id
 
-        if self.cosmosdb_helper:
+        if self.cosmosdb_helper and save_response:
 
             total_response = user_input + " " + reply[0]
 
@@ -135,14 +132,6 @@ class AzureOpenAIManager(ILLMHelper):
                                 "id": str(uuid.uuid4()),
                               }
             self.cosmosdb_helper.create_item(item_to_create)
-
-            # item_to_create = {"token": conversation_id,
-            #                   "role": "assistant",
-            #                     "content": reply[0],
-            #                     "id": str(uuid.uuid4()),
-            #                   }
-            # self.cosmosdb_helper.create_item(item_to_create)
-
 
         return reply, conversation_id
     
