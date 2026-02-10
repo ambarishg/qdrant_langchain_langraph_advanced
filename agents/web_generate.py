@@ -1,5 +1,5 @@
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain.schema import Document
+from langchain_core.documents import Document
 from agents.graph_state import GraphState
 from agents.generate_reply import *
 

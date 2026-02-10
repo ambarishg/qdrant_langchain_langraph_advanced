@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
 from agents.generate_reply import *
 
