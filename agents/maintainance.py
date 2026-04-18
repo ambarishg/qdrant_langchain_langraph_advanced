@@ -54,6 +54,16 @@ workflow.add_edge("eam", END)
 # Compile the state graph application
 app = workflow.compile()
 
+
+def _normalize_generation(generation):
+    """Convert legacy no-record sentinel payloads into a plain-text response."""
+    if isinstance(generation, list) and len(generation) == 1 and isinstance(generation[0], dict):
+        row = generation[0]
+        if len(row) == 1 and str(next(iter(row.values()))).strip().lower() == "no records found":
+            return "No records were found for the request."
+
+    return generation
+
 def get_eam_workflow():
     workflow = StateGraph(GraphState)
 
@@ -104,9 +114,10 @@ def run_app(question: str, token:str) -> str:
     result = app.invoke(inputs)
 
     if "generation" in result:
-        pprint(result["generation"])
+        normalized_generation = _normalize_generation(result["generation"])
+        pprint(normalized_generation)
         pprint(result["datasource"])
-        return result["generation"] , result["datasource"]
+        return normalized_generation , result["datasource"]
     else:
         print("No generation found in result")
         return "No result found" , "No data source"
@@ -125,9 +136,10 @@ def run_eam_app(question: str, token:str) -> str:
     result = eam_app.invoke(inputs)
 
     if "generation" in result:
-        pprint(result["generation"])
+        normalized_generation = _normalize_generation(result["generation"])
+        pprint(normalized_generation)
         pprint(result["datasource"])
-        return result["generation"] , result["datasource"]
+        return normalized_generation , result["datasource"]
     else:
         print("No generation found in result")
         return "No result found" , "No data source"
@@ -146,9 +158,10 @@ def run_measurements_app(question: str, token:str) -> str:
     result = measurements_app.invoke(inputs)
 
     if "generation" in result:
-        pprint(result["generation"])
+        normalized_generation = _normalize_generation(result["generation"])
+        pprint(normalized_generation)
         pprint(result["datasource"])
-        return result["generation"] , result["datasource"]
+        return normalized_generation , result["datasource"]
     else:
         print("No generation found in result")
         return "No result found" , "No data source"

@@ -1,5 +1,8 @@
+import json
+
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
+
 from agents.graph_state import GraphState
 from agents.llm import llm
 
@@ -14,7 +17,11 @@ grading_system_prompt = (
     "You are a grader assessing whether an answer resolves a question.\n"
     "Give a binary score 'yes' or 'no'.\n"
     "'No' means the answer does not resolve the question.\n"
-    "'Yes' means the answer resolves the question."
+    "'Yes' means the answer resolves the question.\n"
+    "The answer may be plain text or structured database results.\n"
+    "If the answer contains table rows, records, or JSON-like objects that directly provide the requested data, grade it as 'yes'.\n"
+    "If the answer explicitly says no matching records were found, grade it as 'yes' only when that still correctly resolves the user's request.\n"
+    "Grade 'no' only when the answer is irrelevant, malformed, or clearly does not address the question."
 )
 
 answer_prompt = ChatPromptTemplate.from_messages([
@@ -26,15 +33,30 @@ structured_llm_grader = llm.with_structured_output(GradeAnswer)
 answer_grader = answer_prompt | structured_llm_grader
 
 
+def _format_generation_for_grading(generation) -> str:
+    """Normalize text and structured DB results into a grader-friendly string."""
+    if isinstance(generation, str):
+        return generation
+
+    if isinstance(generation, (list, dict)):
+        try:
+            return json.dumps(generation, indent=2, default=str)
+        except TypeError:
+            return str(generation)
+
+    return str(generation)
 
 
 def grade_answer(state: GraphState) -> str:
     """Evaluate the quality of the generated answer."""
     print("---GRADE ANSWER---")
     question = state["question"]
-    generation = state["generation"]
+    generation = _format_generation_for_grading(state["generation"])
+    print(f"Question: {question}")
+    print(f"Generation: {generation}")
 
     grade = answer_grader.invoke({"question": question, "generation": generation})
+    print(f"Grading result: {grade}")
     print(f"Grade: {grade.binary_score}")
 
     return grade.binary_score

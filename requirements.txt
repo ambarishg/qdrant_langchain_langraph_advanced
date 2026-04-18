@@ -12,3 +12,5 @@ langchain_huggingface
 qdrant-client
 langchain_qdrant
 sentence-transformers
+langchain_community
+pandas

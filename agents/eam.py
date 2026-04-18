@@ -4,10 +4,16 @@ from azureopenaimanager.eam_prompts import eam_prompts
 
 from agents.graph_state import GraphState
 
+
+NO_RECORDS_MESSAGE = "No matching EAM records were found for the request."
+
+
 def get_eam_results(state: GraphState) -> dict:
     """Extract and return measurements from the state."""
 
     print("---GET EAM RESULTS---")
+    question = state["question"]
+    sql_query = None
     try:
         context = eam_prompts
         question, sql_query = get_sql_query(state, context)
@@ -25,7 +31,7 @@ def get_eam_results(state: GraphState) -> dict:
             dict_df = df.to_dict(orient='records')
             return {"question": question, "generation": dict_df, "documents": str(sql_query), "datasource": "EAM"}
         else:
-            return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query)}
+            return {"question": question, "generation": NO_RECORDS_MESSAGE, "documents": str(sql_query), "datasource": "EAM"}
     except Exception as e:
         print(f"Error in get_eam_results: {e}")
-        return {"question": question, "generation": [{'0':'No records found'}], "documents": str(sql_query), "datasource": "EAM"}
+        return {"question": question, "generation": NO_RECORDS_MESSAGE, "documents": str(sql_query), "datasource": "EAM"}

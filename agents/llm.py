@@ -7,7 +7,7 @@ def initialize_llm():
 
     llm = init_chat_model(
         "azure_openai:gpt-4o",
-        azure_deployment="gpt4o",
+        azure_deployment="gpt-4o",
     )
     metadata = "CRAG, gpt4o"
     return llm, metadata

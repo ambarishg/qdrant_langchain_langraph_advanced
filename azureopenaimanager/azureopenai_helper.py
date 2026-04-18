@@ -35,12 +35,12 @@ class AzureOpenAIManager(ILLMHelper):
         response = self.client.chat.completions.create(
         model=self.deployment_id,
         messages=conversation,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=top_p,
-        frequency_penalty=frequency_penalty,
-        presence_penalty=presence_penalty,
-        stop = [' END']
+        # temperature=temperature,
+        # max_tokens=max_tokens,
+        # top_p=top_p,
+        # frequency_penalty=frequency_penalty,
+        # presence_penalty=presence_penalty,
+        # stop = [' END']
         )
         
         return (response.choices[0].message.content).strip(), \

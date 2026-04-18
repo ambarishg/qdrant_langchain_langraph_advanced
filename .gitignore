@@ -3,3 +3,4 @@
 __pycache__/
 *.pyc
 data02/
+agents/code_prompts.md

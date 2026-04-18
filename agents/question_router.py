@@ -2,6 +2,8 @@ from agents.graph_state import GraphState
 from pydantic import field_validator
 from pydantic import BaseModel, Field
 from typing import Literal
+import re
+
 from agents.llm import llm
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -39,7 +41,7 @@ The possible datasources are:
    - Contains: current and historical measurement data (numerical, time-series, sensor readings, etc.).
 
 3. voltage
-   - Contains: information related to medium voltage, roadways, and electrical engineering (including equations, formulas, and technical concepts).
+   - Contains: information related to medium voltage, current , resistance ,roadways, and electrical engineering (including equations, formulas, and technical concepts).
 
 4. web search
    - Contains: information about current events, news, and general knowledge outside of the above systems.
@@ -55,6 +57,9 @@ If the query is about:
 - Medium voltage, roadways, or electrical concepts/formulas → voltage  
 - Current events, news, or general knowledge → web_search
 
+Return the datasource as a single word: EAM, measurements, voltage, or web_search.
+No need of any markdown formatting, just return the datasource name.
+
 """
 route_prompt = ChatPromptTemplate.from_messages(
     [
@@ -64,6 +69,21 @@ route_prompt = ChatPromptTemplate.from_messages(
 )
 
 question_router = route_prompt | structured_llm_router
+
+
+def _normalize_datasource_name(value: str) -> str:
+    """Strip markdown and return only a valid datasource token."""
+    cleaned = re.sub(r"```[\w-]*", "", str(value))
+    cleaned = cleaned.replace("```", "").replace("`", "").replace("*", "").strip()
+
+    match = re.search(r"\b(web_search|voltage|measurements|EAM)\b", cleaned, flags=re.IGNORECASE)
+    if not match:
+        raise ValueError(f"Invalid datasource response: {value}")
+
+    datasource = match.group(1)
+    if datasource.lower() == "eam":
+        return "EAM"
+    return datasource.lower()
 
 def route_question(state):
     """
@@ -79,17 +99,18 @@ def route_question(state):
         print("---ROUTE QUESTION---")
         question = state["question"]
         source = question_router.invoke({"question": question})
-        print(f"Routed to: {source.datasource}")
-        if source.datasource == "web_search":
+        datasource = _normalize_datasource_name(source.datasource)
+        print(f"Routed to: {datasource}")
+        if datasource == "web_search":
             print("---ROUTE QUESTION TO WEB SEARCH---")
             return "web_search"
-        elif source.datasource == "voltage":
+        elif datasource == "voltage":
             print("---ROUTE QUESTION TO RAG---")
             return "voltage"
-        elif source.datasource == "measurements":
+        elif datasource == "measurements":
             print("---ROUTE QUESTION TO MEASUREMENTS---")
             return "measurements"
-        elif source.datasource == "EAM":
+        elif datasource == "EAM":
             print("---ROUTE QUESTION TO EAM---")
             return "eam"
     except Exception as e:

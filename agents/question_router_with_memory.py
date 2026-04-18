@@ -2,6 +2,8 @@ from agents.graph_state import GraphState
 from pydantic import field_validator
 from pydantic import BaseModel, Field
 from typing import Literal
+import re
+
 from agents.llm import llm
 from langchain_core.prompts import ChatPromptTemplate
 from agents.generate_reply import get_reply
@@ -47,10 +49,26 @@ web_search
 """
 
 
+def _normalize_datasource_name(value: str) -> str:
+    """Strip markdown and return only a valid datasource token."""
+    cleaned = re.sub(r"```[\w-]*", "", str(value))
+    cleaned = cleaned.replace("```", "").replace("`", "").replace("*", "").strip()
+
+    match = re.search(r"\b(web_search|voltage|measurements|EAM)\b", cleaned, flags=re.IGNORECASE)
+    if not match:
+        raise ValueError(f"Invalid datasource response: {value}")
+
+    datasource = match.group(1)
+    if datasource.lower() == "eam":
+        return "EAM"
+    return datasource.lower()
+
+
 def get_question_router(question,conversation_id):
     reply = get_reply(question,system_prompt,conversation_id)
-    print(reply)
-    return reply
+    datasource = _normalize_datasource_name(reply)
+    print(datasource)
+    return datasource
 
 def route_question(state):
     """

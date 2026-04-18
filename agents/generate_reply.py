@@ -20,8 +20,10 @@ def get_reply(user_input, content,
                 )             
     
     conversation=[{"role": "system", "content": "If the answer is not found within the context, please mention \
-        that the answer is not found \
-        Do not answer anything which is not in the context"}]
+        that the answer is not found. \
+        Do not answer anything which is not in the context. \
+        Return the response as plain text only. \
+        Do not use markdown formatting, code fences, bullet lists, or tables."}]
     reply,conversation_id = azure_open_ai_manager.generate_reply_from_context(user_input, 
                         content,conversation, conversation_id,save_response)
     
