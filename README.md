@@ -72,6 +72,9 @@ AZURE_OPENAI_API_KEY=""
 AZURE_OPENAI_ENDPOINT=""
 AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
 OPENAI_API_VERSION="2025-03-01-preview"
+LANGCHAIN_CHAT_MODEL="azure_openai:gpt-4o"
+LANGCHAIN_AZURE_OPENAI_DEPLOYMENT="gpt-4o"
+LLM_METADATA="CRAG, gpt4o"
 
 TAVILY_API_KEY=""
 
@@ -89,7 +92,8 @@ COSMOSDB_CONTAINER_NAME_CATEGORY=""
 Notes:
 
 - `AZURE_OPENAI_DEPLOYMENT_NAME` must match the Azure OpenAI deployment you want to use.
-- The LangChain chat model initialization in `agents/llm.py` is currently hard-coded to `azure_openai:gpt-4o` with deployment `gpt-4o`. If your deployment name differs, update that file or align your deployment name with the code.
+- `agents/llm.py` now reads the LangChain model from `LANGCHAIN_CHAT_MODEL` and the deployment from `LANGCHAIN_AZURE_OPENAI_DEPLOYMENT`, falling back to `AZURE_OPENAI_DEPLOYMENT_NAME` when the LangChain-specific deployment variable is not set.
+- `LLM_METADATA` controls the metadata label returned by `agents/llm.py`.
 - The Qdrant collection name is currently fixed in `agents/configs.py` as `PWD_SENTENCE_TRANSFORMERS`.
 - Tavily is used by `agents/web_generate.py`.
 - Cosmos DB is used by `agents/generate_reply.py` to persist conversation history keyed by the bearer token.
@@ -201,7 +205,6 @@ See `docs/q.md` for sample prompts such as:
 ## Known setup caveats
 
 - `.env.sample` is incomplete for the current codebase; use the expanded template above.
-- `agents/llm.py` hard-codes the Azure deployment to `gpt-4o`.
 - The project assumes the Qdrant collection already exists and is populated.
 - The response path depends on external services being reachable: Azure OpenAI, Qdrant, Tavily, and Cosmos DB.
 - `requirements.txt` does not pin versions, so environment drift is possible across installs.
@@ -222,4 +225,3 @@ See `docs/q.md` for sample prompts such as:
 - Retrieval: `agents/retrieve.py`
 - Web search fallback: `agents/web_generate.py`
 - SQL generation: `agents/generate_sql.py`
-
