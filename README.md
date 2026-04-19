@@ -221,7 +221,7 @@ See `docs/q.md` for sample prompts such as:
 
 - Main orchestration logic: `agents/maintainance.py`
 - HTTP layer: `app.py`
-- Router: `agents/question_router_with_memory.py`
+- Router: `agents/question_router.py`
 - Retrieval: `agents/retrieve.py`
 - Web search fallback: `agents/web_generate.py`
 - SQL generation: `agents/generate_sql.py`
